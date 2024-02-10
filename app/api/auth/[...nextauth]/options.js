@@ -1,6 +1,7 @@
 import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
-
+import CredentialProvider from "next-auth/providers/credentials";
+import bcrypt from "bcrypt";
 export const options = {
   providers: [
     GitHubProvider({
@@ -15,7 +16,7 @@ export const options = {
 
         return {
           ...profile,
-          role: userRole
+          role: userRole,
         };
       },
 
@@ -37,6 +38,45 @@ export const options = {
       clientId: process.env.GOOGLE_ID,
       clientSecret: process.env.GOOGLE_SECRET,
     }),
+    CredentialProvider({
+      name: "Credentials",
+      credentials: {
+        label: "email",
+        type: "text",
+        placeholder: "your-email",
+      },
+    }),
+    CredentialProvider({
+      credentials: {
+        label: "password",
+        type: "password",
+        placeholder: "your ]-password",
+      },
+
+      async authorize(credentials) {
+        try {
+          const foundUser = await User.findOne({ email: credentials.email })
+            .lean()
+            .exec();
+          if (foundUser) {
+            console.log("user exist");
+            const match = await bcrypt.comapre(
+              credentials.password,
+              foundUser.password
+            );
+            if (match) {
+              console.log("good pass");
+              delete foundUser.password;
+              foundUser["role"] = "unverified email";
+              return foundUser;
+            }
+          }
+        } catch (error) {
+          console.log(error);
+        }
+        return null;
+      },
+    }),
   ],
   callbacks: {
     async jwt({ user, token }) {
@@ -44,10 +84,10 @@ export const options = {
 
       return token;
     },
-  
-  async session({ session, token }) {
-    if (session?.user) session.user.role = token.role;
-    return session
+
+    async session({ session, token }) {
+      if (session?.user) session.user.role = token.role;
+      return session;
+    },
   },
-}
-}
+};

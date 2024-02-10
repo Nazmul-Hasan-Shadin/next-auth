@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Nav from "./(components)/Nav";
+import AuthProvider from "./(components)/AuthProvider";
 
 export const metadata = {
   title: "Create Next App",
@@ -10,12 +11,12 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className='bg-gray-100'>
+      <body className="bg-gray-100">
         <Nav></Nav>
-      <div className="mt-2">
-      {children}
-      </div>
-        </body>
+        <AuthProvider>
+          <div className="mt-2">{children}</div>
+        </AuthProvider>
+      </body>
     </html>
   );
 }
